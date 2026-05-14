@@ -9,6 +9,10 @@ const Odoo = (() => {
             departure_address: data.departure_address,
             arrival_address: data.arrival_address,
             notes: data.notes || '',
+            // Conferma automatica server-side: dopo create, fleet.trip.action_confirm()
+            // chiama HERE Routing e crea refueling/toll. Marco riceve trasferte
+            // direttamente in stato 'confirmed' con km/costi.
+            auto_confirm: true,
         });
         const r = await fetch(`${CONFIG.ODOO_URL}/amc/trasferta/submit`, {
             method: 'POST',
