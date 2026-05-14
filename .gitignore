@@ -1,0 +1,12 @@
+# NOTA: config.js è committato pubblicamente (decisione architetturale "link aperto").
+# La sicurezza si basa su token revocabile lato Odoo + restrizione domain su HERE key.
+# Per tornare a separare i segreti, ri-aggiungere "config.js" qui.
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
