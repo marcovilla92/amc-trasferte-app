@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#1e88e5">
+    <meta name="theme-color" content="#1e88e5" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -14,69 +16,142 @@
 </head>
 <body>
 
+<!-- SVG icon sprite (display:none, riusato via <use href>) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+        <symbol id="icon-car" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M18.92 5.01C18.72 4.42 18.16 4 17.5 4h-11c-.66 0-1.21.42-1.42 1.01L3 11v8a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h12v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-8l-2.08-5.99zM6.5 15a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm11 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 10l1.5-4.5h11L19 10H5z"/>
+        </symbol>
+        <symbol id="icon-calendar" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+        </symbol>
+        <symbol id="icon-pin" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12 2a8 8 0 0 0-8 8c0 5.4 7 11.5 7.3 11.7a1 1 0 0 0 1.4 0C13 21.5 20 15.4 20 10a8 8 0 0 0-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+        </symbol>
+        <symbol id="icon-flag" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
+        </symbol>
+        <symbol id="icon-note" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M14 17H4v-2h10v2zm6-4H4v-2h16v2zm0-4H4V7h16v2z"/>
+        </symbol>
+        <symbol id="icon-send" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+        </symbol>
+        <symbol id="icon-swap" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M7.5 3L4 6.5l3.5 3.5V8H14V6H7.5V3zm9 7v2h6.5L20 8.5 16.5 5v3H10v2h6.5zM7 14l-3.5 3.5L7 21v-3h6.5v-2H7v-2zm12 0h-6.5v3L16 14l-3.5-3.5V14H19z"/>
+        </symbol>
+        <symbol id="icon-repeat" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+        </symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm.5 11H7v-2h4V6h1.5v7z"/>
+        </symbol>
+        <symbol id="icon-chevron" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M7 10l5 5 5-5z"/>
+        </symbol>
+        <symbol id="icon-info" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+        </symbol>
+        <symbol id="icon-warning" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+        </symbol>
+        <symbol id="icon-history" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M13 3a9 9 0 0 0-9 9H1l3.9 3.9.07.14L9 12H6a7 7 0 1 1 7 7c-3.86 0-7-3.13-7-7H4a9 9 0 1 0 9-9zm-1 5v5l4.25 2.52.75-1.27-3.5-2.08V8H12z"/>
+        </symbol>
+    </defs>
+</svg>
+
 <header class="app-header">
-    <h1>AMC Trasferte</h1>
-    <span class="status-pill" id="connection-status" aria-live="polite">●</span>
+    <div class="brand">
+        <span class="brand-icon"><svg><use href="#icon-car"/></svg></span>
+        <h1>AMC Trasferte</h1>
+    </div>
+    <span class="status-pill online" id="connection-status" aria-live="polite">online</span>
 </header>
 
 <main class="container">
 
     <section class="card" id="form-section">
-        <h2>Nuova trasferta</h2>
-        <form id="trip-form" autocomplete="off">
+        <h2 class="card-title">
+            <span class="card-title-icon"><svg><use href="#icon-flag"/></svg> Nuova trasferta</span>
+        </h2>
+
+        <div class="form-actions-top">
+            <button type="button" class="btn-chip" id="repeat-last" disabled>
+                <svg><use href="#icon-repeat"/></svg> Ripeti ultima
+            </button>
+        </div>
+
+        <form id="trip-form" autocomplete="off" novalidate>
 
             <div class="field">
-                <label for="date">Data</label>
+                <label for="date" class="field-label">
+                    <svg><use href="#icon-calendar"/></svg> Data
+                </label>
                 <input type="date" id="date" name="date" required>
             </div>
 
-            <div class="field autocomplete">
-                <label for="departure">Partenza</label>
-                <input type="text" id="departure" name="departure"
-                       placeholder="es. Caprino Bergamasco"
-                       autocomplete="off" inputmode="search" required>
-                <ul class="suggestions" id="departure-suggestions" role="listbox"></ul>
-            </div>
+            <div class="field-pair">
+                <div class="field autocomplete">
+                    <label for="departure" class="field-label">
+                        <svg><use href="#icon-pin"/></svg> Partenza
+                    </label>
+                    <input type="text" id="departure" name="departure"
+                           placeholder="es. Caprino Bergamasco"
+                           autocomplete="off" inputmode="search" required>
+                    <ul class="suggestions" id="departure-suggestions" role="listbox"></ul>
+                </div>
 
-            <div class="field autocomplete">
-                <label for="arrival">Arrivo</label>
-                <input type="text" id="arrival" name="arrival"
-                       placeholder="es. Via Roma 12, Milano"
-                       autocomplete="off" inputmode="search" required>
-                <ul class="suggestions" id="arrival-suggestions" role="listbox"></ul>
+                <button type="button" class="btn-swap" id="swap-addresses" aria-label="Inverti partenza e arrivo" title="Inverti">
+                    <svg><use href="#icon-swap"/></svg>
+                </button>
+
+                <div class="field autocomplete">
+                    <label for="arrival" class="field-label">
+                        <svg><use href="#icon-flag"/></svg> Arrivo
+                    </label>
+                    <input type="text" id="arrival" name="arrival"
+                           placeholder="es. Via Roma 12, Milano"
+                           autocomplete="off" inputmode="search" required>
+                    <ul class="suggestions" id="arrival-suggestions" role="listbox"></ul>
+                </div>
             </div>
 
             <div class="field">
-                <label for="notes">Note (opzionale)</label>
+                <label for="notes" class="field-label">
+                    <svg><use href="#icon-note"/></svg> Note (opzionale)
+                </label>
                 <textarea id="notes" name="notes" rows="2"
                           placeholder="Cliente, cantiere, motivo..."></textarea>
             </div>
 
             <button type="submit" class="btn-primary" id="submit-btn">
-                Invia trasferta
+                <svg><use href="#icon-send"/></svg> Invia trasferta
             </button>
-
-            <div id="form-feedback" class="feedback" aria-live="polite"></div>
         </form>
     </section>
 
     <section class="card" id="history-section">
-        <h2>
-            Ultime trasferte
-            <button type="button" class="btn-link" id="toggle-history" aria-expanded="true">
-                <span aria-hidden="true">▾</span>
+        <h2 class="card-title">
+            <span class="card-title-icon"><svg><use href="#icon-history"/></svg> Ultime trasferte</span>
+            <button type="button" class="btn-link" id="toggle-history" aria-expanded="true" aria-label="Mostra/Nascondi">
+                <svg><use href="#icon-chevron"/></svg>
             </button>
         </h2>
-        <ul class="trip-list" id="trip-list" aria-live="polite">
-            <li class="empty">Nessuna trasferta inviata da questo dispositivo.</li>
-        </ul>
+        <ul class="trip-list" id="trip-list" aria-live="polite"></ul>
     </section>
 
 </main>
 
 <footer class="app-footer">
-    <small>PWA AMC Trasferte · <span id="app-version">v1.0</span></small>
+    PWA AMC Trasferte · <span id="app-version">v1.1</span>
 </footer>
+
+<!-- Toast stack -->
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
 
 <script src="config.js"></script>
 <script src="js/storage.js"></script>

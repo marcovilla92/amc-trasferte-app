@@ -1,4 +1,4 @@
-// app.js — Bootstrap UI: form, autocomplete, submit, history, status.
+// app.js — Bootstrap UI: form, autocomplete, submit, history, status, toast.
 
 (function () {
     'use strict';
@@ -9,46 +9,42 @@
     const arrivalInput = $('#arrival');
     const notesInput = $('#notes');
     const submitBtn = $('#submit-btn');
-    const feedback = $('#form-feedback');
     const tripList = $('#trip-list');
     const connStatus = $('#connection-status');
     const toggleHistoryBtn = $('#toggle-history');
     const historySection = $('#history-section');
     const form = $('#trip-form');
+    const swapBtn = $('#swap-addresses');
+    const repeatBtn = $('#repeat-last');
+    const toastStack = $('#toast-stack');
 
     // ---- Init ---------------------------------------------------------------
     function init() {
-        // Data oggi di default
         dateInput.value = new Date().toISOString().slice(0, 10);
 
-        // Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-                .then(() => console.log('SW registrato'))
-                .catch((e) => console.warn('SW registr. fallita', e));
+            navigator.serviceWorker.register('service-worker.js').catch(() => {});
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data?.type === 'trip-synced') {
-                    showFeedback('Trasferta in coda inviata.', 'success');
+                    showToast('Trasferta in coda inviata.', 'success');
                     refreshHistory();
                 }
             });
         }
 
-        // Status connessione
         Queue.watchConnection((online) => {
-            connStatus.textContent = online ? '● online' : '◌ offline';
+            connStatus.textContent = online ? 'online' : 'offline';
             connStatus.className = 'status-pill ' + (online ? 'online' : 'offline');
             if (online) {
                 Queue.processNow().then((r) => {
                     if (r.processed) {
-                        showFeedback(`${r.processed} trasferta/e in coda inviata/e.`, 'success');
+                        showToast(`${r.processed} trasferta/e in coda inviata/e.`, 'success');
                         refreshHistory();
                     }
                 });
             }
         });
 
-        // Anche su visibility change (utente riapre la PWA), processa la coda
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && navigator.onLine) {
                 Queue.processNow().then((r) => {
@@ -57,18 +53,23 @@
             }
         });
 
-        // Autocomplete handlers
         setupAutocomplete(departureInput, $('#departure-suggestions'));
         setupAutocomplete(arrivalInput, $('#arrival-suggestions'));
 
-        // Submit
         form.addEventListener('submit', onSubmit);
 
-        // Toggle history
+        swapBtn.addEventListener('click', onSwapAddresses);
+        repeatBtn.addEventListener('click', onRepeatLast);
+
         toggleHistoryBtn.addEventListener('click', () => {
             historySection.classList.toggle('collapsed');
             const expanded = !historySection.classList.contains('collapsed');
             toggleHistoryBtn.setAttribute('aria-expanded', String(expanded));
+        });
+
+        // Clear invalid state al digitare
+        [dateInput, departureInput, arrivalInput].forEach((inp) => {
+            inp.addEventListener('input', () => inp.classList.remove('invalid'));
         });
 
         refreshHistory();
@@ -78,10 +79,9 @@
     function setupAutocomplete(input, suggestionsEl) {
         let debounceTimer = null;
         let activeIndex = -1;
-        let lastItems = [];
+        const fieldEl = input.closest('.field');
 
         const render = (items) => {
-            lastItems = items;
             activeIndex = -1;
             suggestionsEl.innerHTML = '';
             items.forEach((it, idx) => {
@@ -93,7 +93,7 @@
                     e.preventDefault();
                     input.value = it.label;
                     suggestionsEl.innerHTML = '';
-                    input.dataset.confirmed = '1';
+                    input.classList.remove('invalid');
                 });
                 suggestionsEl.appendChild(li);
             });
@@ -101,18 +101,21 @@
 
         input.addEventListener('input', () => {
             clearTimeout(debounceTimer);
-            input.dataset.confirmed = '';
             const q = input.value.trim();
             if (q.length < 3) {
                 suggestionsEl.innerHTML = '';
+                fieldEl.classList.remove('loading');
                 return;
             }
             debounceTimer = setTimeout(async () => {
+                fieldEl.classList.add('loading');
                 try {
                     const items = await Here.autosuggest(q);
                     render(items);
                 } catch (e) {
                     console.warn('Autosuggest error', e);
+                } finally {
+                    fieldEl.classList.remove('loading');
                 }
             }, 300);
         });
@@ -137,7 +140,6 @@
         });
 
         input.addEventListener('blur', () => {
-            // Lascio chiudere dopo un piccolo delay per permettere click su <li>
             setTimeout(() => { suggestionsEl.innerHTML = ''; }, 200);
         });
     }
@@ -146,11 +148,53 @@
         items.forEach((el, i) => el.classList.toggle('active', i === idx));
     }
 
+    // ---- Swap / Repeat ------------------------------------------------------
+    function onSwapAddresses() {
+        const a = departureInput.value;
+        departureInput.value = arrivalInput.value;
+        arrivalInput.value = a;
+        departureInput.classList.remove('invalid');
+        arrivalInput.classList.remove('invalid');
+        haptic(30);
+    }
+
+    async function onRepeatLast() {
+        const [last] = await Storage.listHistory(1);
+        if (!last) {
+            showToast('Nessuna trasferta precedente da ripetere.', 'info');
+            return;
+        }
+        departureInput.value = last.departure_address || '';
+        arrivalInput.value = last.arrival_address || '';
+        notesInput.value = last.notes || '';
+        haptic(30);
+        showToast('Dati pre-compilati dall\'ultima trasferta.', 'info');
+    }
+
+    async function updateRepeatBtnState() {
+        const n = await Storage.listHistory(1);
+        repeatBtn.disabled = n.length === 0;
+    }
+
     // ---- Submit -------------------------------------------------------------
+    function validateForm() {
+        let valid = true;
+        [dateInput, departureInput, arrivalInput].forEach((inp) => {
+            if (!inp.value.trim()) {
+                inp.classList.add('invalid');
+                valid = false;
+            }
+        });
+        return valid;
+    }
+
     async function onSubmit(e) {
         e.preventDefault();
-        showFeedback('Invio in corso…', '');
-        submitBtn.disabled = true;
+
+        if (!validateForm()) {
+            showToast('Compila i campi obbligatori.', 'error');
+            return;
+        }
 
         const data = {
             date: dateInput.value,
@@ -159,11 +203,8 @@
             notes: notesInput.value.trim(),
         };
 
-        if (!data.date || !data.departure_address || !data.arrival_address) {
-            showFeedback('Compila tutti i campi obbligatori.', 'error');
-            submitBtn.disabled = false;
-            return;
-        }
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
 
         try {
             const result = await Odoo.submitTrasferta(data);
@@ -173,12 +214,12 @@
                 odoo_name: result.name,
                 syncedAt: Date.now(),
             });
-            showFeedback(`Trasferta inviata (#${result.id}).`, 'success');
+            haptic(50);
+            showToast(`Inviata (#${result.id})`, 'success');
             resetForm();
             refreshHistory();
-        } catch (e) {
-            console.error('Submit failed:', e);
-            // Salva in coda offline
+        } catch (err) {
+            console.error('Submit failed:', err);
             try {
                 const body = JSON.stringify({
                     token: CONFIG.PWA_TOKEN,
@@ -188,14 +229,15 @@
                     notes: data.notes,
                 });
                 await Queue.enqueue(body);
-                showFeedback('Salvata in coda — invio quando torna la connessione.', 'warn');
+                showToast('Salvata in coda — invio quando torna online.', 'warning');
                 resetForm();
                 refreshHistory();
-            } catch (err) {
-                showFeedback(`Errore: ${e.message}`, 'error');
+            } catch (qe) {
+                showToast(`Errore: ${err.message}`, 'error');
             }
         } finally {
             submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
         }
     }
 
@@ -203,15 +245,25 @@
         departureInput.value = '';
         arrivalInput.value = '';
         notesInput.value = '';
-        // Data resta su oggi
+        [departureInput, arrivalInput].forEach((i) => i.classList.remove('invalid'));
+        departureInput.focus();
     }
 
     // ---- History UI ---------------------------------------------------------
     async function refreshHistory() {
         const items = await Storage.listHistory(10);
         const queue = await Storage.listQueue();
+
+        updateRepeatBtnState();
+
         if (!items.length && !queue.length) {
-            tripList.innerHTML = '<li class="empty">Nessuna trasferta inviata da questo dispositivo.</li>';
+            tripList.innerHTML = `
+                <div class="empty-state">
+                    <svg><use href="#icon-history"/></svg>
+                    <p>Nessuna trasferta inviata da questo dispositivo.<br>
+                    Compila il form e premi Invia per iniziare.</p>
+                </div>
+            `;
             return;
         }
         const fragments = [];
@@ -219,8 +271,11 @@
             const body = JSON.parse(q.body || '{}');
             fragments.push(`
                 <li class="trip-item queued">
-                    <span class="date">${body.date || '—'}</span>
-                    <span class="route">${escapeHtml(body.departure_address || '')} → ${escapeHtml(body.arrival_address || '')}</span>
+                    <span class="icon"><svg><use href="#icon-clock"/></svg></span>
+                    <div class="info">
+                        <div class="route">${escapeHtml(body.departure_address || '')} → ${escapeHtml(body.arrival_address || '')}</div>
+                        <div class="date">${body.date || '—'}</div>
+                    </div>
                     <span class="badge">in coda</span>
                 </li>
             `);
@@ -228,8 +283,11 @@
         for (const h of items) {
             fragments.push(`
                 <li class="trip-item synced">
-                    <span class="date">${h.date || '—'}</span>
-                    <span class="route">${escapeHtml(h.departure_address || '')} → ${escapeHtml(h.arrival_address || '')}</span>
+                    <span class="icon"><svg><use href="#icon-check"/></svg></span>
+                    <div class="info">
+                        <div class="route">${escapeHtml(h.departure_address || '')} → ${escapeHtml(h.arrival_address || '')}</div>
+                        <div class="date">${h.date || '—'}</div>
+                    </div>
                     <span class="badge ok">#${h.odoo_id || '?'}</span>
                 </li>
             `);
@@ -243,17 +301,34 @@
         })[c]);
     }
 
-    // ---- Feedback -----------------------------------------------------------
-    function showFeedback(msg, type) {
-        feedback.textContent = msg;
-        feedback.className = 'feedback ' + (type || '');
-        if (type === 'success' || type === 'warn') {
-            setTimeout(() => {
-                if (feedback.textContent === msg) {
-                    feedback.textContent = '';
-                    feedback.className = 'feedback';
-                }
-            }, 4500);
+    // ---- Toast --------------------------------------------------------------
+    const TOAST_ICONS = {
+        success: 'icon-check',
+        warning: 'icon-warning',
+        error: 'icon-warning',
+        info: 'icon-info',
+    };
+    function showToast(msg, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const iconId = TOAST_ICONS[type] || 'icon-info';
+        toast.innerHTML = `
+            <svg><use href="#${iconId}"/></svg>
+            <span>${escapeHtml(msg)}</span>
+        `;
+        toastStack.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        const timeout = type === 'error' ? 6000 : 3500;
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 280);
+        }, timeout);
+    }
+
+    // ---- Haptic -------------------------------------------------------------
+    function haptic(ms) {
+        if (navigator.vibrate) {
+            try { navigator.vibrate(ms); } catch (e) {}
         }
     }
 
