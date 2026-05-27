@@ -2,7 +2,7 @@
 // - Cache statica per offline app shell
 // - Background Sync: rilancia le trasferte in coda quando torna la connessione
 
-const CACHE_VERSION = 'amc-trasferte-v2';
+const CACHE_VERSION = 'amc-trasferte-v3';
 const SHELL = [
     './',
     './index.html',

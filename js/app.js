@@ -35,6 +35,8 @@
         Queue.watchConnection((online) => {
             connStatus.textContent = online ? 'online' : 'offline';
             connStatus.className = 'status-pill ' + (online ? 'online' : 'offline');
+            submitBtn.disabled = !online;
+            submitBtn.title = online ? '' : 'Devi essere online per inviare la trasferta';
             if (online) {
                 Queue.processNow().then((r) => {
                     if (r.processed) {
@@ -191,6 +193,13 @@
     async function onSubmit(e) {
         e.preventDefault();
 
+        if (!navigator.onLine) {
+            showToast('Sei offline. Devi avere connessione per inviare la trasferta.', 'error');
+            haptic(80);
+            submitBtn.disabled = true;
+            return;
+        }
+
         if (!validateForm()) {
             showToast('Compila i campi obbligatori.', 'error');
             return;
@@ -220,24 +229,10 @@
             refreshHistory();
         } catch (err) {
             console.error('Submit failed:', err);
-            try {
-                const body = JSON.stringify({
-                    token: CONFIG.PWA_TOKEN,
-                    date: data.date,
-                    departure_address: data.departure_address,
-                    arrival_address: data.arrival_address,
-                    notes: data.notes,
-                });
-                await Queue.enqueue(body);
-                showToast('Salvata in coda — invio quando torna online.', 'warning');
-                resetForm();
-                refreshHistory();
-            } catch (qe) {
-                showToast(`Errore: ${err.message}`, 'error');
-            }
+            showToast(`Invio fallito: ${err.message}. Riprova quando hai segnale stabile.`, 'error');
         } finally {
-            submitBtn.disabled = false;
             submitBtn.classList.remove('loading');
+            submitBtn.disabled = !navigator.onLine;
         }
     }
 
