@@ -159,6 +159,41 @@ body {
     50% { box-shadow: 0 0 0 6px rgba(105, 240, 174, 0); }
 }
 
+/* ---------- Offline banner ---------- */
+.offline-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+    color: #fff;
+    padding: 14px 18px;
+    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.35);
+    animation: bannerSlideIn 0.3s ease-out;
+}
+.offline-banner[hidden] { display: none; }
+.offline-banner svg {
+    width: 28px;
+    height: 28px;
+    color: #fff;
+    flex-shrink: 0;
+}
+.offline-banner strong {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.offline-banner span {
+    display: block;
+    font-size: 0.82rem;
+    opacity: 0.92;
+    margin-top: 2px;
+}
+@keyframes bannerSlideIn {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+}
+
 /* ---------- Container ---------- */
 .container {
     flex: 1;

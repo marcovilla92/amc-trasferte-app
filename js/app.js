@@ -17,6 +17,7 @@
     const swapBtn = $('#swap-addresses');
     const repeatBtn = $('#repeat-last');
     const toastStack = $('#toast-stack');
+    const offlineBanner = $('#offline-banner');
 
     // ---- Init ---------------------------------------------------------------
     function init() {
@@ -37,6 +38,7 @@
             connStatus.className = 'status-pill ' + (online ? 'online' : 'offline');
             submitBtn.disabled = !online;
             submitBtn.title = online ? '' : 'Devi essere online per inviare la trasferta';
+            offlineBanner.hidden = online;
             if (online) {
                 Queue.processNow().then((r) => {
                     if (r.processed) {
