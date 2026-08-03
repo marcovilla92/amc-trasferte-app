@@ -1,19 +1,20 @@
-// storage.js — IndexedDB wrapper per: queue di trasferte da inviare,
-// storico delle inviate, cache geocode locale.
+// storage.js — IndexedDB wrapper per: storico delle trasferte inviate,
+// cache geocode locale.
 //
 // Espone l'oggetto globale `Storage` con metodi async.
 
 const Storage = (() => {
     const DB_NAME = 'amc-trasferte';
-    const DB_VERSION = 1;
+    const DB_VERSION = 2;
 
     function openDB() {
         return new Promise((resolve, reject) => {
             const req = indexedDB.open(DB_NAME, DB_VERSION);
             req.onupgradeneeded = () => {
                 const db = req.result;
-                if (!db.objectStoreNames.contains('queue')) {
-                    db.createObjectStore('queue', {keyPath: 'id', autoIncrement: true});
+                // v2: rimossa la coda offline (l'invio richiede connessione)
+                if (db.objectStoreNames.contains('queue')) {
+                    db.deleteObjectStore('queue');
                 }
                 if (!db.objectStoreNames.contains('history')) {
                     const s = db.createObjectStore('history', {keyPath: 'id', autoIncrement: true});
@@ -40,24 +41,6 @@ const Storage = (() => {
     }
 
     return {
-        // -------- Queue (trasferte da inviare in offline) ----------
-        async enqueue(item) {
-            const store = await tx('queue', 'readwrite');
-            return promisify(store.add(item));
-        },
-        async listQueue() {
-            const store = await tx('queue');
-            return promisify(store.getAll());
-        },
-        async removeQueueItem(id) {
-            const store = await tx('queue', 'readwrite');
-            return promisify(store.delete(id));
-        },
-        async countQueue() {
-            const store = await tx('queue');
-            return promisify(store.count());
-        },
-
         // -------- History (trasferte inviate con successo) --------
         async addHistory(item) {
             const store = await tx('history', 'readwrite');

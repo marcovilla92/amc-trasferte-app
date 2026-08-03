@@ -25,36 +25,14 @@
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js').catch(() => {});
-            navigator.serviceWorker.addEventListener('message', (event) => {
-                if (event.data?.type === 'trip-synced') {
-                    showToast('Trasferta in coda inviata.', 'success');
-                    refreshHistory();
-                }
-            });
         }
 
-        Queue.watchConnection((online) => {
+        watchConnection((online) => {
             connStatus.textContent = online ? 'online' : 'offline';
             connStatus.className = 'status-pill ' + (online ? 'online' : 'offline');
             submitBtn.disabled = !online;
             submitBtn.title = online ? '' : 'Devi essere online per inviare la trasferta';
             offlineBanner.hidden = online;
-            if (online) {
-                Queue.processNow().then((r) => {
-                    if (r.processed) {
-                        showToast(`${r.processed} trasferta/e in coda inviata/e.`, 'success');
-                        refreshHistory();
-                    }
-                });
-            }
-        });
-
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && navigator.onLine) {
-                Queue.processNow().then((r) => {
-                    if (r.processed) refreshHistory();
-                });
-            }
         });
 
         setupAutocomplete(departureInput, $('#departure-suggestions'));
@@ -150,6 +128,14 @@
 
     function updateActive(items, idx) {
         items.forEach((el, i) => el.classList.toggle('active', i === idx));
+    }
+
+    // ---- Connessione --------------------------------------------------------
+    function watchConnection(onChange) {
+        const update = () => onChange(navigator.onLine);
+        window.addEventListener('online', update);
+        window.addEventListener('offline', update);
+        update();
     }
 
     // ---- Swap / Repeat ------------------------------------------------------
@@ -249,11 +235,10 @@
     // ---- History UI ---------------------------------------------------------
     async function refreshHistory() {
         const items = await Storage.listHistory(10);
-        const queue = await Storage.listQueue();
 
         updateRepeatBtnState();
 
-        if (!items.length && !queue.length) {
+        if (!items.length) {
             tripList.innerHTML = `
                 <div class="empty-state">
                     <svg><use href="#icon-history"/></svg>
@@ -264,19 +249,6 @@
             return;
         }
         const fragments = [];
-        for (const q of queue) {
-            const body = JSON.parse(q.body || '{}');
-            fragments.push(`
-                <li class="trip-item queued">
-                    <span class="icon"><svg><use href="#icon-clock"/></svg></span>
-                    <div class="info">
-                        <div class="route">${escapeHtml(body.departure_address || '')} → ${escapeHtml(body.arrival_address || '')}</div>
-                        <div class="date">${body.date || '—'}</div>
-                    </div>
-                    <span class="badge">in coda</span>
-                </li>
-            `);
-        }
         for (const h of items) {
             fragments.push(`
                 <li class="trip-item synced">

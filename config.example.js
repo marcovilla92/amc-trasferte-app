@@ -1,5 +1,7 @@
 // config.example.js — TEMPLATE per le config dell'app.
-// Copia in config.js (NON committato) e inserisci i valori reali.
+// Copia in config.js e inserisci i valori reali.
+// NOTA: config.js è committato pubblicamente (vedi nota in .gitignore):
+// il token è revocabile lato Odoo e la HERE key va ristretta al dominio.
 
 const CONFIG = {
     // URL base di Odoo (no trailing slash)

@@ -573,10 +573,6 @@ body {
     place-items: center;
 }
 .trip-item .icon svg { width: 14px; height: 14px; }
-.trip-item.queued .icon {
-    background: var(--warning-bg);
-    color: var(--warning);
-}
 .trip-item .info {
     min-width: 0;
     display: flex;
@@ -606,10 +602,6 @@ body {
 .trip-item .badge.ok {
     background: var(--success-bg);
     color: var(--success);
-}
-.trip-item.queued .badge {
-    background: var(--warning-bg);
-    color: var(--warning);
 }
 
 /* Skeleton (history loading) */

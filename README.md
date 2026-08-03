@@ -6,9 +6,11 @@ I dati vengono inviati direttamente al modulo Odoo `fleet_trip_amc`.
 ## Caratteristiche
 
 - Form mobile-first con autocomplete indirizzi via HERE
-- Funziona offline: salva in coda IndexedDB e ri-invia quando torna la connessione (Background Sync)
+- **Richiede connessione per inviare**: se offline, banner rosso e invio bloccato (nessuna coda locale)
+- App shell disponibile offline (cache service worker), l'invio no
 - PWA installabile su Android (Aggiungi alla schermata Home)
 - Storia delle ultime trasferte inviate da quel device (cache locale)
+- Auto-conferma decisa dal server (flag nei Settings Odoo)
 
 ## Setup iniziale
 
@@ -21,6 +23,7 @@ In Odoo: **Settings → Trasferte AMC → blocco "PWA Trasferte (app mobile dipe
 - **Token PWA**: genera con `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`, incolla
 - **Veicolo predefinito**: seleziona il veicolo del dipendente
 - **Dipendente predefinito**: seleziona il dipendente
+- **Auto-conferma** (opzionale): se attiva, le trasferte inviate dalla PWA vengono confermate subito
 
 ### 2. Configura la PWA
 
@@ -32,7 +35,11 @@ cp config.example.js config.js
 #   - HERE_API_KEY (la stessa del modulo Odoo)
 ```
 
-⚠️ `config.js` è in `.gitignore` per non committare segreti.
+⚠️ **`config.js` è committato pubblicamente** (decisione architetturale "link aperto",
+vedi nota in `.gitignore`). La sicurezza si basa su:
+- token PWA revocabile dai Settings Odoo
+- HERE API key ristretta al dominio github.io (vedi punto 5)
+- l'endpoint Odoo crea solo trasferte per il dipendente preconfigurato
 
 ### 3. Test locale
 
@@ -44,28 +51,16 @@ python3 -m http.server 8000
 
 ### 4. Deploy su GitHub Pages
 
-```bash
-git init
-git add .
-git commit -m "init"
-git branch -M main
-git remote add origin git@github.com:<utente>/amc-trasferte-app.git
-git push -u origin main
+Il repo è già su GitHub (`marcovilla92/amc-trasferte-app`) con Pages attivo su main/root.
+Per pubblicare una modifica basta `git push`.
 
-# Su GitHub: Settings → Pages → Source: main / root → Save
-```
-
-⚠️ Per pubblicare il `config.js` su GitHub Pages senza committarlo:
-- **Opzione A**: GitHub Actions con secrets (più sicuro)
-- **Opzione B**: deploy manuale - committa `config.js` accettando che è pubblico
-
-URL finale: `https://<utente>.github.io/amc-trasferte-app/`
+URL finale: `https://marcovilla92.github.io/amc-trasferte-app/`
 
 ### 5. Restringi la HERE API key
 
 Sul portale [developer.here.com](https://developer.here.com):
 - App → la tua app → Project Settings → Restrictions
-- Aggiungi `https://<utente>.github.io/*` come dominio autorizzato
+- Aggiungi `https://marcovilla92.github.io/*` come dominio autorizzato
 
 ## Architettura
 
@@ -73,19 +68,18 @@ Sul portale [developer.here.com](https://developer.here.com):
 [PWA su GitHub Pages]
   ├─ HERE Autosuggest API  (chiamata diretta browser, CORS abilitato)
   └─ POST /amc/trasferta/submit  (controller Odoo custom con cors='*')
-       └─ fleet.trip.create(state='draft')
+       └─ fleet.trip.create  (draft o confermata, secondo il flag Auto-conferma)
 ```
 
 ## File principali
 
 - `index.html` — form mobile
 - `manifest.json` — PWA manifest (icone, theme color)
-- `service-worker.js` — cache statica + Background Sync
-- `js/storage.js` — IndexedDB (queue, history, cache geocode)
+- `service-worker.js` — cache statica della app shell
+- `js/storage.js` — IndexedDB (history, cache geocode)
 - `js/here.js` — HERE Autosuggest wrapper
 - `js/odoo.js` — POST trasferta a Odoo
-- `js/queue.js` — offline queue + Background Sync registration
-- `js/app.js` — UI bootstrap + form handlers
+- `js/app.js` — UI bootstrap + form handlers + stato connessione
 - `css/style.css` — mobile-first
 
 ## Revoca accesso
